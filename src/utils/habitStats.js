@@ -1,8 +1,5 @@
 import { dateKey, addDays } from './dates';
 
-// O ID da conclusão é "data + hábito": só existe UMA por hábito por dia.
-export const completionId = (date, habitId) => `${date}_${habitId}`;
-
 // Dias consecutivos concluídos. Se hoje ainda não foi feito, a sequência de ontem continua valendo.
 export function calcStreak(dates) {
   let d = new Date();
