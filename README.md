@@ -9,9 +9,9 @@ App mobile de controle de hábitos diários, feito com React Native + Expo.
 - Marcar/desmarcar um hábito como concluído **hoje**
 - Sequência (streak) de dias consecutivos de cada hábito
 - Excluir hábitos junto com o histórico (segurando o item)
+- Perfil com os dados da conta e botão **Sair**
 
 > Nesta versão os hábitos e a sessão ficam apenas em memória: ao recarregar o app, tudo é perdido.
-> Ainda não há botão para sair da conta.
 
 ## 🗂️ Como funciona o histórico
 

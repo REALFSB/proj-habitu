@@ -4,9 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import HomeScreen from '../screens/HomeScreen';
 import AddHabitScreen from '../screens/AddHabitScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
-const ICONS = { Início: 'home', Novo: 'add-circle' };
+const ICONS = { Início: 'home', Novo: 'add-circle', Perfil: 'person' };
 
 export default function Tabs() {
   return (
@@ -18,6 +19,7 @@ export default function Tabs() {
       })}>
       <Tab.Screen name="Início" component={HomeScreen} />
       <Tab.Screen name="Novo" component={AddHabitScreen} />
+      <Tab.Screen name="Perfil" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
