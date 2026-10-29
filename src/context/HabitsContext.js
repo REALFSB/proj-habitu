@@ -1,17 +1,42 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
+import { deriveHabits, completionId } from '../utils/habitStats';
+import { dateKey } from '../utils/dates';
 
 const HabitsContext = createContext();
 export const useHabits = () => useContext(HabitsContext);
 
-// Versão inicial: os hábitos ficam apenas na memória (somem ao recarregar o app)
+// Os dados ficam apenas na memória (somem ao recarregar o app).
+//  habitsRaw:   [{ id, name }]
+//  completions: [{ id, habitId, date }]  -> uma por hábito por dia
 export function HabitsProvider({ children }) {
-  const [habits, setHabits] = useState([]);
+  const [habitsRaw, setHabitsRaw] = useState([]);
+  const [completions, setCompletions] = useState([]);
 
-  const addHabit = (name) => setHabits((list) => [...list, { id: String(Date.now()), name, done: false }]);
+  // "Concluído hoje" e "sequência" são calculados a partir do histórico de conclusões
+  const today = dateKey();
+  const { habits, byDate } = useMemo(() => deriveHabits(habitsRaw, completions, today), [habitsRaw, completions, today]);
 
-  const toggle = (id) => setHabits((list) => list.map((h) => (h.id === id ? { ...h, done: !h.done } : h)));
+  // Marca/desmarca o hábito hoje
+  const toggle = (habit) => {
+    const id = completionId(today, habit.id);
+    if (habit.done) {
+      setCompletions((l) => l.filter((c) => c.id !== id));
+    } else {
+      setCompletions((l) => [...l, { id, habitId: habit.id, date: today }]);
+    }
+  };
 
-  const removeHabit = (id) => setHabits((list) => list.filter((h) => h.id !== id));
+  const addHabit = (name) => setHabitsRaw((l) => [...l, { id: String(Date.now()), name }]);
 
-  return <HabitsContext.Provider value={{ habits, addHabit, toggle, removeHabit }}>{children}</HabitsContext.Provider>;
+  // Remove o hábito junto com todo o seu histórico
+  const removeHabit = (id) => {
+    setHabitsRaw((l) => l.filter((h) => h.id !== id));
+    setCompletions((l) => l.filter((c) => c.habitId !== id));
+  };
+
+  return (
+    <HabitsContext.Provider value={{ habits, completions, byDate, toggle, addHabit, removeHabit }}>
+      {children}
+    </HabitsContext.Provider>
+  );
 }
