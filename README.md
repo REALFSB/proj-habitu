@@ -10,6 +10,7 @@ App mobile de controle de hábitos diários, feito com React Native + Expo.
 - Sequência (streak) de dias consecutivos de cada hábito
 - Excluir hábitos junto com o histórico (segurando o item)
 - Puxar a lista para baixo para atualizar
+- **Dashboard** com a taxa de conclusão (7, 30 ou 90 dias), comparação com o período anterior, total de conclusões, dias perfeitos, sequência atual e melhor sequência
 - Perfil com os dados da conta e botão **Sair**
 
 > Os hábitos persistem na conta do usuário. Já o login ainda não persiste: ao recarregar o app, é preciso entrar de novo.
@@ -44,6 +45,14 @@ users/{uid}/completions/{AAAA-MM-DD_habitId}  → { habitId, date, completedAt }
 O ID da conclusão é *data + hábito*, garantindo no máximo um registro por hábito por dia. "Concluído hoje" e "sequência" são calculados a partir desse histórico (`src/utils/habitStats.js`).
 
 O acesso ao Firestore é feito pela API REST, em `src/services/` (`firestoreClient.js` e `habitsService.js`), sem o SDK do Firebase.
+
+## 📊 Como o dashboard calcula
+
+- **Esperado:** para cada dia do período, quantos hábitos já existiam naquela data. Um hábito novo não penaliza os dias anteriores à sua criação.
+- **Taxa de conclusão:** conclusões ÷ esperado. A tendência compara com o período imediatamente anterior, de mesmo tamanho (em pontos percentuais).
+- **Dia perfeito:** todos os hábitos ativos do dia foram concluídos.
+
+As regras ficam em `src/utils/metrics.js`, separadas das telas.
 
 ## 🚀 Como executar
 
