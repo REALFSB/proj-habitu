@@ -3,6 +3,10 @@ import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PeriodSelector from '../components/PeriodSelector';
 import StatCard from '../components/StatCard';
+import Heatmap from '../components/Heatmap';
+import WeekdayBars from '../components/WeekdayBars';
+import RateBar from '../components/RateBar';
+import HistoryDay from '../components/HistoryDay';
 import { useHabits } from '../context/HabitsContext';
 import { computeMetrics } from '../utils/metrics';
 import { colors, globalStyles as g } from '../theme';
@@ -14,12 +18,13 @@ const PERIODS = [
 ];
 
 export default function DashboardScreen() {
-  const { habits, completions } = useHabits();
+  const { habits, completions, byDate } = useHabits();
   const [period, setPeriod] = useState(30);
 
   // Todas as métricas saem do histórico de conclusões
   const m = useMemo(() => computeMetrics(habits, completions, period), [habits, completions, period]);
   const pct = Math.round(m.rate * 100);
+  const periodDays = Object.keys(byDate).filter((d) => m.keys.includes(d)).sort().reverse();
 
   return (
     <SafeAreaView style={g.screen} edges={['top']}>
@@ -54,6 +59,35 @@ export default function DashboardScreen() {
           <StatCard icon="🏆" value={`${m.bestStreak}d`} label="Melhor sequência" />
         </View>
         <Text style={[g.muted, { marginTop: 8 }]}>Média de {m.avgPerDay.toFixed(1)} conclusões por dia</Text>
+
+        <Text style={g.section}>Insights</Text>
+        <View style={[g.card, { flexDirection: 'column', alignItems: 'flex-start' }]}>
+          {m.insights.map((t, i) => (
+            <Text key={i} style={[g.cardTitle, { fontWeight: '500', marginVertical: 3 }]}>{t}</Text>
+          ))}
+        </View>
+
+        <Text style={g.section}>Calendário de atividade</Text>
+        <Heatmap columns={m.heatColumns} />
+
+        <Text style={g.section}>Desempenho por dia da semana</Text>
+        <WeekdayBars weekdays={m.weekdays} best={m.bestDay} />
+
+        <Text style={g.section}>Ranking de hábitos</Text>
+        {m.ranking.length === 0 && <Text style={g.muted}>Nenhum hábito ainda.</Text>}
+        {m.ranking.map((r, i) => (
+          <RateBar
+            key={r.id}
+            position={i + 1}
+            name={r.name}
+            rate={r.rate}
+            detail={`${r.done}/${r.expected} dias · 🔥 ${r.streak}d · 🏆 melhor ${r.best}d`}
+          />
+        ))}
+
+        <Text style={g.section}>Histórico por data</Text>
+        {periodDays.length === 0 && <Text style={g.muted}>Nenhuma conclusão neste período.</Text>}
+        {periodDays.map((d) => <HistoryDay key={d} date={d} names={byDate[d]} total={habits.length} />)}
       </ScrollView>
     </SafeAreaView>
   );

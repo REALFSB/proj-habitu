@@ -1,5 +1,6 @@
 import { dateKey, addDays } from './dates';
 
+const WEEKDAYS = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
 const pct = (r) => Math.round(r * 100);
 
 export const parseKey = (k) => {
@@ -71,6 +72,62 @@ export function computeMetrics(habits, completions, period) {
     datesByHabit[c.habitId].add(c.date);
   });
 
+  // Ranking de hábitos no período
+  const ranking = habits
+    .map((h) => {
+      const expected = keys.filter((k) => k >= cur.created[h.id]).length;
+      const done = cur.perHabit[h.id];
+      return {
+        id: h.id,
+        name: h.name,
+        done,
+        expected,
+        rate: expected ? Math.min(1, done / expected) : 0,
+        streak: h.streak,
+        best: longestStreak(datesByHabit[h.id] || new Set()),
+      };
+    })
+    .sort((a, b) => b.rate - a.rate);
+
+  // Desempenho por dia da semana
+  const acc = Array.from({ length: 7 }, () => ({ done: 0, expected: 0 }));
+  cur.days.forEach((d) => {
+    const w = parseKey(d.key).getDay();
+    acc[w].done += d.count;
+    acc[w].expected += d.active;
+  });
+  const weekdays = acc.map((x, i) => ({
+    label: 'DSTQQSS'[i],
+    name: WEEKDAYS[i],
+    hasData: x.expected > 0,
+    rate: x.expected ? Math.min(1, x.done / x.expected) : 0,
+  }));
+  const ranked = weekdays.filter((w) => w.hasData).sort((a, b) => b.rate - a.rate);
+  const bestDay = ranked[0];
+  const worstDay = ranked[ranked.length - 1];
+
+  // Mapa de calor: colunas de 7 dias (domingo → sábado), como num calendário
+  const cells = [
+    ...Array(parseKey(keys[0]).getDay()).fill(null),
+    ...cur.days.map((d) => ({ key: d.key, count: d.count, level: d.active ? d.count / d.active : null })),
+  ];
+  while (cells.length % 7) cells.push(null);
+  const heatColumns = [];
+  for (let i = 0; i < cells.length; i += 7) heatColumns.push(cells.slice(i, i + 7));
+
+  // Insights em texto
+  const insights = [];
+  if (cur.expected === 0) {
+    insights.push('Crie hábitos e marque conclusões para ver análises aqui.');
+  } else {
+    if (ranking.length) insights.push(`🏅 Hábito mais consistente: ${ranking[0].name} (${pct(ranking[0].rate)}%).`);
+    if (bestDay) insights.push(`📅 Seu melhor dia é ${bestDay.name} (${pct(bestDay.rate)}% de conclusão).`);
+    if (worstDay && worstDay !== bestDay) insights.push(`⚠️ O dia mais fraco é ${worstDay.name} (${pct(worstDay.rate)}%).`);
+    if (trend !== null && trend !== 0)
+      insights.push(trend > 0 ? `📈 ${trend} pontos acima do período anterior.` : `📉 ${Math.abs(trend)} pontos abaixo do período anterior.`);
+    if (cur.perfectDays > 0) insights.push(`✨ ${cur.perfectDays} dia(s) perfeito(s): todos os hábitos concluídos.`);
+  }
+
   return {
     keys,
     rate: cur.rate,
@@ -80,6 +137,11 @@ export function computeMetrics(habits, completions, period) {
     perfectDays: cur.perfectDays,
     avgPerDay: period ? cur.done / period : 0,
     currentStreak: Math.max(0, ...habits.map((h) => h.streak)),
-    bestStreak: Math.max(0, ...habits.map((h) => longestStreak(datesByHabit[h.id] || new Set()))),
+    bestStreak: Math.max(0, ...ranking.map((r) => r.best)),
+    heatColumns,
+    weekdays,
+    bestDay,
+    ranking,
+    insights,
   };
 }
